@@ -1,1 +1,506 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Android WebView App Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #3d5afe 0%, #7c4dff 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        header h1 { font-size: 2em; margin-bottom: 10px; }
+        header p { opacity: 0.9; font-size: 1.1em; }
+        .content { padding: 30px; }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #3d5afe;
+        }
+        .section h2 { color: #3d5afe; margin-bottom: 20px; font-size: 1.3em; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
+        input[type="text"], input[type="url"], input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        input:focus { outline: none; border-color: #3d5afe; }
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 12px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .checkbox-item:hover { background: #e8eaf6; }
+        .checkbox-item input { margin-right: 10px; width: 18px; height: 18px; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .toggle-group { display: flex; flex-direction: column; gap: 10px; }
+        .toggle-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+        }
+        .toggle-switch { position: relative; width: 50px; height: 26px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 26px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #3d5afe; }
+        input:checked + .slider:before { transform: translateX(24px); }
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: 0; top: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%; height: 100%;
+        }
+        .btn {
+            background: linear-gradient(135deg, #3d5afe 0%, #7c4dff 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(61, 90, 254, 0.4); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .icon-preview { margin-top: 10px; max-width: 100px; border-radius: 8px; display: none; }
+        .status { margin-top: 20px; padding: 15px; border-radius: 8px; display: none; }
+        .status.success { background: #e8f5e9; color: #2e7d32; border: 1px solid #4caf50; }
+        .status.error { background: #ffebee; color: #c62828; border: 1px solid #ef5350; }
+        .instructions {
+            margin-top: 30px;
+            padding: 20px;
+            background: #fff3e0;
+            border-radius: 10px;
+            border-left: 4px solid #ff9800;
+        }
+        .instructions h3 { color: #e65100; margin-bottom: 15px; }
+        .instructions ol { margin-left: 20px; }
+        .instructions li { margin-bottom: 10px; line-height: 1.6; }
+        code {
+            background: #263238;
+            color: #80cbc4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background: #263238;
+            color: #80cbc4;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 Android WebView App Generator</h1>
+            <p>Создайте своё Android-приложение за несколько минут</p>
+        </header>
+        <div class="content">
+            <form id="appForm">
+                <div class="section">
+                    <h2>📱 Основная информация</h2>
+                    <div class="form-group">
+                        <label for="targetUrl">URL целевого сайта *</label>
+                        <input type="url" id="targetUrl" placeholder="https://example.com" required>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label for="appName">Название приложения *</label>
+                            <input type="text" id="appName" placeholder="My App" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="packageName">Package Name *</label>
+                            <input type="text" id="packageName" placeholder="com.example.app" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label for="versionCode">Version Code *</label>
+                            <input type="number" id="versionCode" value="1" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="versionName">Version Name *</label>
+                            <input type="text" id="versionName" value="1.0.0" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2>🔐 Разрешения (Permissions)</h2>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="permission" value="ACCESS_FINE_LOCATION">
+                            📍 ACCESS_FINE_LOCATION
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="permission" value="ACCESS_COARSE_LOCATION">
+                            🌐 ACCESS_COARSE_LOCATION
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="permission" value="CAMERA">
+                            📷 CAMERA
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="permission" value="RECORD_AUDIO">
+                            🎤 RECORD_AUDIO
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="permission" value="INTERNET" checked>
+                            🌐 INTERNET (обязательно)
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="permission" value="WRITE_EXTERNAL_STORAGE">
+                            💾 WRITE_EXTERNAL_STORAGE
+                        </label>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2>⚙️ Настройки WebView</h2>
+                    <div class="toggle-group">
+                        <div class="toggle-item">
+                            <span>🗄️ Включить кэширование</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="enableCache" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-item">
+                            <span>📁 Загрузка файлов</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="enableFileUpload" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-item">
+                            <span>🔒 Игнорировать SSL ошибки</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="ignoreSSLErrors">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-item">
+                            <span>📜 JavaScript</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="enableJavaScript" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-item">
+                            <span>🔍 DOM Storage</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="enableDomStorage" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2>🎨 Иконка приложения</h2>
+                    <div class="form-group">
+                        <label for="appIcon">Выберите PNG файл (рекомендуется 512x512)</label>
+                        <div class="file-input-wrapper">
+                            <button type="button" class="btn" style="width: auto; margin: 0;">📁 Выбрать файл</button>
+                            <input type="file" id="appIcon" accept="image/png">
+                        </div>
+                        <img id="iconPreview" class="icon-preview" alt="Preview">
+                        <p id="iconFileName" style="margin-top: 10px; color: #666;"></p>
+                    </div>
+                </div>
+                <button type="submit" class="btn" id="generateBtn">🚀 Сгенерировать проект</button>
+            </form>
+            <div id="status" class="status"></div>
+            <div class="instructions" id="instructions">
+                <h3>📋 Как собрать APK:</h3>
+                <ol>
+                    <li>Скачайте сгенерированный ZIP-архив</li>
+                    <li>Распакуйте архив в удобную папку</li>
+                    <li>Убедитесь, что у вас установлен <strong>Android Studio</strong> или <strong>Android SDK</strong></li>
+                    <li>Откройте проект в Android Studio или используйте командную строку:
+                        <pre><code>cd YourAppFolder
+./gradlew assembleRelease</code></pre>
+                    </li>
+                    <li>Для подписанного APK настройте keystore и выполните:
+                        <pre><code>./gradlew assembleRelease</code></pre>
+                    </li>
+                    <li>APK файл будет находиться в <code>app/build/outputs/apk/release/</code></li>
+                </ol>
+                <p><strong>⚠️ Важно:</strong> GitHub Pages — это статический хостинг, поэтому полная автоматическая сборка APK требует сервера с Android SDK. Это приложение генерирует полностью готовый проект, который можно собрать локально или на CI/CD сервере.</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('appIcon').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('iconPreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    document.getElementById('iconFileName').textContent = file.name;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
 
+        document.getElementById('appForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('generateBtn');
+            const status = document.getElementById('status');
+            btn.disabled = true;
+            btn.textContent = '⏳ Генерация...';
+            status.style.display = 'none';
+            try {
+                const config = {
+                    targetUrl: document.getElementById('targetUrl').value,
+                    appName: document.getElementById('appName').value,
+                    packageName: document.getElementById('packageName').value,
+                    versionCode: document.getElementById('versionCode').value,
+                    versionName: document.getElementById('versionName').value,
+                    permissions: Array.from(document.querySelectorAll('input[name="permission"]:checked')).map(cb => cb.value),
+                    enableCache: document.getElementById('enableCache').checked,
+                    enableFileUpload: document.getElementById('enableFileUpload').checked,
+                    ignoreSSLErrors: document.getElementById('ignoreSSLErrors').checked,
+                    enableJavaScript: document.getElementById('enableJavaScript').checked,
+                    enableDomStorage: document.getElementById('enableDomStorage').checked,
+                    appIcon: null
+                };
+                const iconFile = document.getElementById('appIcon').files[0];
+                if (iconFile) {
+                    config.appIcon = await readFileAsBase64(iconFile);
+                }
+                const zip = await generateAndroidProject(config);
+                const content = await zip.generateAsync({type: 'blob'});
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = config.appName.replace(/\s+/g, '_') + '_AndroidApp.zip';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                status.className = 'status success';
+                status.innerHTML = '<strong>✅ Успешно!</strong> Проект сгенерирован и загружен. Следуйте инструкциям выше для сборки APK.';
+                status.style.display = 'block';
+            } catch (error) {
+                status.className = 'status error';
+                status.innerHTML = '<strong>❌ Ошибка:</strong> ' + error.message;
+                status.style.display = 'block';
+                console.error(error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🚀 Сгенерировать проект';
+            }
+        });
+
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function generateAndroidProject(config) {
+            const zip = new JSZip();
+            const packagePath = config.packageName.replace(/\./g, '/');
+            zip.file('.gitignore', getGitIgnore());
+            zip.file('README.md', getReadme(config));
+            zip.file('settings.gradle.kts', getSettingsGradle(config.appName));
+            zip.file('build.gradle.kts', getRootBuildGradle());
+            zip.file('gradle.properties', getGradleProperties());
+            zip.file('gradle/wrapper/gradle-wrapper.properties', getGradleWrapperProperties());
+            zip.file('app/build.gradle.kts', getAppBuildGradle(config));
+            zip.file('app/proguard-rules.pro', getProguardRules());
+            zip.file('app/src/main/AndroidManifest.xml', getAndroidManifest(config));
+            zip.file('app/src/main/java/' + packagePath + '/MainActivity.kt', getMainActivity(config));
+            if (config.enableFileUpload) {
+                zip.file('app/src/main/java/' + packagePath + '/FileUploader.kt', getFileUploader(config));
+            }
+            zip.file('app/src/main/res/values/strings.xml', getStringsXml(config));
+            zip.file('app/src/main/res/values/colors.xml', getColorsXml());
+            zip.file('app/src/main/res/values/themes.xml', getThemesXml());
+            zip.file('app/src/main/res/layout/activity_main.xml', getLayoutXml());
+            const defaultIcon = getDefaultIcon();
+            zip.file('app/src/main/res/mipmap-mdpi/ic_launcher.png', defaultIcon, {base64: true});
+            zip.file('app/src/main/res/mipmap-hdpi/ic_launcher.png', defaultIcon, {base64: true});
+            zip.file('app/src/main/res/mipmap-xhdpi/ic_launcher.png', defaultIcon, {base64: true});
+            zip.file('app/src/main/res/mipmap-xxhdpi/ic_launcher.png', defaultIcon, {base64: true});
+            zip.file('app/src/main/res/mipmap-xxxhdpi/ic_launcher.png', defaultIcon, {base64: true});
+            if (config.appIcon) {
+                const iconData = config.appIcon.split(',')[1];
+                zip.file('app/src/main/res/mipmap-mdpi/ic_launcher_custom.png', iconData, {base64: true});
+                zip.file('app/src/main/res/mipmap-hdpi/ic_launcher_custom.png', iconData, {base64: true});
+                zip.file('app/src/main/res/mipmap-xhdpi/ic_launcher_custom.png', iconData, {base64: true});
+                zip.file('app/src/main/res/mipmap-xxhdpi/ic_launcher_custom.png', iconData, {base64: true});
+                zip.file('app/src/main/res/mipmap-xxxhdpi/ic_launcher_custom.png', iconData, {base64: true});
+            }
+            zip.file('build_apk.sh', getBuildScript(config));
+            return zip;
+        }
+
+        function getGitIgnore() {
+            return '*.iml\n.gradle\n/local.properties\n/.idea\n.DS_Store\n/build\n/captures\n.externalNativeBuild\n.cxx\nkey.properties\nkeystore.jks';
+        }
+
+        function getReadme(config) {
+            return '# ' + config.appName + ' - Android WebView App\n\n## Описание\nПриложение WebView для отображения сайта: ' + config.targetUrl + '\n\n## Сборка APK\n\n### Требования\n- Android Studio Arctic Fox или новее\n- JDK 11 или новее\n\n### Шаги сборки\n\n1. Откройте проект в Android Studio\n2. Дождитесь завершения синхронизации Gradle\n3. Для отладочной версии:\n   ```bash\n   ./gradlew assembleDebug\n   ```\n\n4. Для релизной версии (требуется настроить подпись):\n   ```bash\n   ./gradlew assembleRelease\n   ```\n\n### Настройка подписи APK\n\n1. Создайте keystore:\n   ```bash\n   keytool -genkey -v -keystore my-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-alias\n   ```\n\n2. Создайте файл `key.properties` в корне проекта:\n   ```\n   storePassword=ваш_пароль\n   keyPassword=пароль_ключа\n   keyAlias=my-alias\n   storeFile=../my-release-key.jks\n   ```\n\n3. Раскомментируйте блок signingConfigs в `app/build.gradle.kts`\n\n### Расположение APK\n- Debug: `app/build/outputs/apk/debug/app-debug.apk`\n- Release: `app/build/outputs/apk/release/app-release.apk`\n\n## Конфигурация\n- Package: ' + config.packageName + '\n- Version: ' + config.versionName + ' (' + config.versionCode + ')\n- Permissions: ' + config.permissions.join(', ');
+        }
+
+        function getSettingsGradle(appName) {
+            return 'pluginManagement {\n    repositories {\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\ndependencyResolutionManagement {\n    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n\nrootProject.name = "' + appName.replace(/\s+/g, '_') + '"\ninclude(":app")\n';
+        }
+
+        function getRootBuildGradle() {
+            return '// Top-level build file where you can add configuration options common to all sub-projects/modules.\nplugins {\n    id("com.android.application") version "8.2.0" apply false\n    id("org.jetbrains.kotlin.android") version "1.9.0" apply false\n}\n';
+        }
+
+        function getGradleProperties() {
+            return '# Project-wide Gradle settings.\norg.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nkotlin.code.style=official\nandroid.nonTransitiveRClass=true\n';
+        }
+
+        function getGradleWrapperProperties() {
+            return 'distributionBase=GRADLE_USER_HOME\ndistributionPath=wrapper/dists\ndistributionUrl=https\\://services.gradle.org/distributions/gradle-8.2-bin.zip\nzipStoreBase=GRADLE_USER_HOME\nzipStorePath=wrapper/dists\n';
+        }
+
+        function getAppBuildGradle(config) {
+            return 'plugins {\n    id("com.android.application")\n    id("org.jetbrains.kotlin.android")\n}\n\nandroid {\n    namespace = "' + config.packageName + '"\n    compileSdk = 34\n\n    defaultConfig {\n        applicationId = "' + config.packageName + '"\n        minSdk = 24\n        targetSdk = 34\n        versionCode = ' + config.versionCode + '\n        versionName = "' + config.versionName + '"\n\n        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"\n    }\n\n    // Раскомментируйте для подписи релизного APK\n    /*signingConfigs {\n        release {\n            if (project.hasProperty("RELEASE_STORE_FILE")) {\n                storeFile = file(RELEASE_STORE_FILE)\n                storePassword = RELEASE_STORE_PASSWORD\n                keyAlias = RELEASE_KEY_ALIAS\n                keyPassword = RELEASE_KEY_PASSWORD\n            }\n        }\n    }*/\n\n    buildTypes {\n        release {\n            isMinifyEnabled = false\n            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")\n            // signingConfig = signingConfigs.getByName("release")\n        }\n    }\n    \n    compileOptions {\n        sourceCompatibility = JavaVersion.VERSION_1_8\n        targetCompatibility = JavaVersion.VERSION_1_8\n    }\n    \n    kotlinOptions {\n        jvmTarget = "1.8"\n    }\n}\n\ndependencies {\n    implementation("androidx.core:core-ktx:1.12.0")\n    implementation("androidx.appcompat:appcompat:1.6.1")\n    implementation("com.google.android.material:material:1.11.0")\n    implementation("androidx.constraintlayout:constraintlayout:2.1.4")\n    implementation("androidx.webkit:webkit:1.9.0")\n    testImplementation("junit:junit:4.13.2")\n    androidTestImplementation("androidx.test.ext:junit:1.1.5")\n    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")\n}\n';
+        }
+
+        function getProguardRules() {
+            return '# Add project specific ProGuard rules here.\n-keepattributes *Annotation*\n-keepclassmembers class * {\n    @android.webkit.JavascriptInterface <methods>;\n}\n-keepclassmembers class * extends android.webkit.WebViewClient {\n    public void *(android.webkit.WebView, java.lang.String, android.graphics.Bitmap);\n    public boolean *(android.webkit.WebView, java.lang.String);\n}\n';
+        }
+
+        function getAndroidManifest(config) {
+            let perms = '';
+            config.permissions.forEach(p => {
+                const permMap = {
+                    'ACCESS_FINE_LOCATION': 'android.permission.ACCESS_FINE_LOCATION',
+                    'ACCESS_COARSE_LOCATION': 'android.permission.ACCESS_COARSE_LOCATION',
+                    'CAMERA': 'android.permission.CAMERA',
+                    'RECORD_AUDIO': 'android.permission.RECORD_AUDIO',
+                    'INTERNET': 'android.permission.INTERNET',
+                    'WRITE_EXTERNAL_STORAGE': 'android.permission.WRITE_EXTERNAL_STORAGE'
+                };
+                perms += '    <uses-permission android:name="' + permMap[p] + '" />\n';
+            });
+            const cameraFeature = config.permissions.includes('CAMERA') ? '\n    <uses-feature android:name="android.hardware.camera" android:required="false" />' : '';
+            return '<?xml version="1.0" encoding="utf-8"?>\n<manifest xmlns:android="http://schemas.android.com/apk/res/android"\n    xmlns:tools="http://schemas.android.com/tools">\n\n' + perms + cameraFeature + '\n    <application\n        android:allowBackup="true"\n        android:icon="@mipmap/ic_launcher"\n        android:label="@string/app_name"\n        android:roundIcon="@mipmap/ic_launcher"\n        android:supportsRtl="true"\n        android:theme="@style/Theme.AppWebView"\n        android:usesCleartextTraffic="true"\n        tools:targetApi="31">\n        \n        <activity\n            android:name=".MainActivity"\n            android:exported="true"\n            android:configChanges="orientation|screenSize|keyboardHidden"\n            android:launchMode="singleTask">\n            <intent-filter>\n                <action android:name="android.intent.action.MAIN" />\n                <category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>\n        </activity>\n        \n        <provider\n            android:name="androidx.core.content.FileProvider"\n            android:authorities="' + config.packageName + '.fileprovider"\n            android:exported="false"\n            android:grantUriPermissions="true">\n            <meta-data\n                android:name="android.support.FILE_PROVIDER_PATHS"\n                android:resource="@xml/file_paths" />\n        </provider>\n        \n    </application>\n\n</manifest>';
+        }
+
+        function getMainActivity(config) {
+            const sslHandling = config.ignoreSSLErrors ? 
+                'override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {\n                handler?.proceed()\n            }' : 
+                'override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {\n                super.onReceivedSslError(view, handler, error)\n                handler?.cancel()\n            }';
+            const cacheSetting = config.enableCache ? 
+                'webView.settings.cacheMode = WebSettings.LOAD_DEFAULT' : 
+                'webView.settings.cacheMode = WebSettings.LOAD_NO_CACHE';
+            const fileUploaderClass = config.enableFileUpload ? 'FileUploader()' : 'null';
+            
+            let permChecks = '';
+            ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION', 'CAMERA', 'RECORD_AUDIO'].forEach(p => {
+                if (config.permissions.includes(p)) {
+                    permChecks += '\n        if (ContextCompat.checkSelfPermission(this, Manifest.permission.' + p.toLowerCase() + ') \n            != PackageManager.PERMISSION_GRANTED) {\n            permissionsToRequest.add(Manifest.permission.' + p.toLowerCase() + ')\n        }';
+                }
+            });
+
+            return 'package ' + config.packageName + '\n\nimport android.Manifest\nimport android.annotation.SuppressLint\nimport android.app.Activity\nimport android.content.pm.PackageManager\nimport android.net.http.SslError\nimport android.os.Build\nimport android.os.Bundle\nimport android.webkit.*\nimport android.widget.Toast\nimport androidx.annotation.RequiresApi\nimport androidx.appcompat.app.AppCompatActivity\nimport androidx.core.app.ActivityCompat\nimport androidx.core.content.ContextCompat\nimport android.webkit.ValueCallback\nimport android.net.Uri\nimport android.content.Intent\nimport android.provider.MediaStore\nimport java.io.File\nimport java.util.*\n\nclass MainActivity : AppCompatActivity() {\n\n    private lateinit var webView: WebView\n    private var fileUploader: FileUploader? = ' + fileUploaderClass + '\n    private val REQUEST_CAMERA_PERMISSION = 100\n    private val REQUEST_FILE_PICK = 101\n    private val REQUEST_IMAGE_CAPTURE = 102\n    private var uploadMessage: ValueCallback<Array<Uri>>? = null\n    private var currentPhotoPath: String? = null\n\n    @SuppressLint("SetJavaScriptEnabled")\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n        setContentView(R.layout.activity_main)\n\n        webView = findViewById(R.id.webView)\n        setupWebView()\n        webView.loadUrl("' + config.targetUrl + '")\n    }\n\n    private fun setupWebView() {\n        val settings = webView.settings\n        settings.javaScriptEnabled = ' + config.enableJavaScript.toString().lowercase() + '\n        settings.domStorageEnabled = ' + config.enableDomStorage.toString().lowercase() + '\n        ' + cacheSetting + '\n        settings.allowFileAccess = true\n        settings.allowContentAccess = true\n        settings.mediaPlaybackRequiresUserGesture = false\n        \n        if (fileUploader != null) {\n            webView.webChromeClient = object : WebChromeClient() {\n                @RequiresApi(Build.VERSION_CODES.LOLLIPOP)\n                override fun onShowFileChooser(\n                    webView: WebView?,\n                    filePathCallback: ValueCallback<Array<Uri>>?,\n                    fileChooserParams: FileChooserParams?\n                ): Boolean {\n                    uploadMessage = filePathCallback\n                    fileUploader?.showFileChooser(this@MainActivity, fileChooserParams?.acceptTypes)\n                    return true\n                }\n            }\n        }\n        \n        webView.webViewClient = object : WebViewClient() {\n            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {\n                view?.loadUrl(request?.url.toString())\n                return true\n            }\n            \n            override fun onPageFinished(view: WebView?, url: String?) {\n                super.onPageFinished(view, url)\n            }\n            \n            override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {\n                super.onReceivedError(view, request, error)\n                if (error?.isForMainFrame == true) {\n                    Toast.makeText(this@MainActivity, "Ошибка загрузки: ${error.description}", Toast.LENGTH_LONG).show()\n                }\n            }\n            ' + sslHandling + '\n        }\n        \n        requestPermissionsIfNeeded()\n    }\n\n    private fun requestPermissionsIfNeeded() {\n        val permissionsToRequest = mutableListOf<String>()\n        ' + permChecks + '\n        \n        if (permissionsToRequest.isNotEmpty()) {\n            ActivityCompat.requestPermissions(\n                this,\n                permissionsToRequest.toTypedArray(),\n                REQUEST_CAMERA_PERMISSION\n            )\n        }\n    }\n\n    override fun onRequestPermissionsResult(\n        requestCode: Int,\n        permissions: Array<out String>,\n        grantResults: IntArray\n    ) {\n        super.onRequestPermissionsResult(requestCode, permissions, grantResults)\n        if (requestCode == REQUEST_CAMERA_PERMISSION) {\n            val allGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }\n            if (!allGranted) {\n                Toast.makeText(this, "Некоторые разрешения не предоставлены", Toast.LENGTH_LONG).show()\n            }\n        }\n    }\n\n    @Deprecated("Deprecated in Java")\n    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {\n        super.onActivityResult(requestCode, resultCode, data)\n        \n        if (requestCode == REQUEST_FILE_PICK && resultCode == Activity.RESULT_OK) {\n            val result = data?.data?.let { arrayOf(it) }\n            uploadMessage?.onReceiveValue(result)\n            uploadMessage = null\n        } else if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == Activity.RESULT_OK) {\n            val photoUri = currentPhotoPath?.let { Uri.fromFile(File(it)) }\n            val result = photoUri?.let { arrayOf(it) }\n            uploadMessage?.onReceiveValue(result)\n            uploadMessage = null\n        } else {\n            uploadMessage?.onReceiveValue(null)\n            uploadMessage = null\n        }\n    }\n\n    @Deprecated("Deprecated in Java")\n    override fun onBackPressed() {\n        if (webView.canGoBack()) {\n            webView.goBack()\n        } else {\n            super.onBackPressed()\n        }\n    }\n}\n';
+        }
+
+        function getFileUploader(config) {
+            return 'package ' + config.packageName + '\n\nimport android.app.Activity\nimport android.content.Intent\nimport android.net.Uri\nimport android.os.Environment\nimport android.provider.MediaStore\nimport androidx.core.content.FileProvider\nimport java.io.File\nimport java.text.SimpleDateFormat\nimport java.util.*\n\nclass FileUploader {\n    \n    private var tempFilePath: String? = null\n    \n    fun showFileChooser(activity: Activity, acceptTypes: Array<String>?) {\n        val hasCameraPermission = android.Manifest.permission.CAMERA.let {\n            activity.checkSelfPermission(it) == android.content.pm.PackageManager.PERMISSION_GRANTED\n        }\n        \n        val isImage = acceptTypes?.any { it.contains("image") } ?: true\n        \n        if (isImage && hasCameraPermission) {\n            val chooseIntent = createChooseIntent(activity)\n            activity.startActivityForResult(\n                Intent.createChooser(chooseIntent, "Выберите действие"),\n                101\n            )\n        } else {\n            val contentIntent = Intent(Intent.ACTION_GET_CONTENT)\n            contentIntent.type = "*/*"\n            if (acceptTypes?.isNotEmpty() == true) {\n                contentIntent.putExtra(Intent.EXTRA_MIME_TYPES, acceptTypes)\n            }\n            activity.startActivityForResult(\n                Intent.createChooser(contentIntent, "Выберите файл"),\n                101\n            )\n        }\n    }\n    \n    private fun createChooseIntent(activity: Activity): Intent {\n        val photoFile = createImageFile(activity)\n        tempFilePath = photoFile.absolutePath\n        \n        val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)\n        val photoURI = FileProvider.getUriForFile(\n            activity,\n            "${activity.packageName}.fileprovider",\n            photoFile\n        )\n        cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)\n        cameraIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)\n        \n        return cameraIntent\n    }\n    \n    private fun createImageFile(activity: Activity): File {\n        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())\n        val storageDir = activity.getExternalFilesDir(Environment.DIRECTORY_PICTURES)\n        return File.createTempFile("JPEG_${timeStamp}_", ".jpg", storageDir)\n    }\n}\n';
+        }
+
+        function getStringsXml(config) {
+            return '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <string name="app_name">' + config.appName + '</string>\n</resources>\n';
+        }
+
+        function getColorsXml() {
+            return '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="purple_200">#FFBB86FC</color>\n    <color name="purple_500">#FF6200EE</color>\n    <color name="purple_700">#FF3700B3</color>\n    <color name="teal_200">#FF03DAC5</color>\n    <color name="teal_700">#FF018786</color>\n    <color name="black">#FF000000</color>\n    <color name="white">#FFFFFFFF</color>\n</resources>\n';
+        }
+
+        function getThemesXml() {
+            return '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <style name="Theme.AppWebView" parent="Theme.MaterialComponents.DayNight.NoActionBar">\n        <item name="colorPrimary">@color/purple_500</item>\n        <item name="colorPrimaryVariant">@color/purple_700</item>\n        <item name="colorOnPrimary">@color/white</item>\n        <item name="colorSecondary">@color/teal_200</item>\n        <item name="colorSecondaryVariant">@color/teal_700</item>\n        <item name="colorOnSecondary">@color/black</item>\n        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>\n    </style>\n</resources>\n';
+        }
+
+        function getLayoutXml() {
+            return '<?xml version="1.0" encoding="utf-8"?>\n<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"\n    android:layout_width="match_parent"\n    android:layout_height="match_parent">\n\n    <WebView\n        android:id="@+id/webView"\n        android:layout_width="match_parent"\n        android:layout_height="match_parent" />\n\n</FrameLayout>\n';
+        }
+
+        function getDefaultIcon() {
+            return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        }
+
+        function getBuildScript(config) {
+            return '#!/bin/bash\n\necho "🔨 Сборка ' + config.appName + '..."\n\nif ! command -v ./gradlew &> /dev/null\nthen\n    echo "❌ Gradle не найден."\n    exit 1\nfi\n\necho "📦 Синхронизация зависимостей..."\n./gradlew clean\n\necho "📱 Сборка Debug APK..."\n./gradlew assembleDebug\n\nif [ $? -eq 0 ]; then\n    echo "✅ Debug APK успешно собран!"\n    echo "📍 Файл: app/build/outputs/apk/debug/app-debug.apk"\nelse\n    echo "❌ Ошибка сборки Debug APK"\n    exit 1\nfi\n\necho "🚀 Сборка Release APK..."\n./gradlew assembleRelease\n\nif [ $? -eq 0 ]; then\n    echo "✅ Release APK успешно собран!"\n    echo "📍 Файл: app/build/outputs/apk/release/app-release.apk"\nelse\n    echo "❌ Ошибка сборки Release APK"\nfi\n\necho ""\necho "📋 Готово! Проверьте папку app/build/outputs/apk/"\n';
+        }
+    </script>
+</body>
+</html>
